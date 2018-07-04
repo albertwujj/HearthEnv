@@ -11,10 +11,13 @@ from utils import *
 from color_card import *
 import describe_card as describe
 import game_to_input
+from gym.core import Env
+from gym import spaces
 from sty import fg
 
 logging.disable(logging.CRITICAL)
 
+env.observationSpace =
 
 class AutoNumber(Enum):
 	def __new__(cls):
@@ -32,6 +35,11 @@ class Move(AutoNumber):
 	mulligan = ()
 	choice = ()
 
+class Info(AutoNumber):
+	player_to_move_only = ()
+	possible_moves = ()
+	random_move = ()
+
 
 
 string_to_move = {"end": Move.end_turn, "heropower": Move.hero_power, "minionattack": Move.minion_attack, "heroattack": Move.hero_attack,
@@ -39,14 +47,16 @@ string_to_move = {"end": Move.end_turn, "heropower": Move.hero_power, "minionatt
 move_to_string = {v: k for k, v in string_to_move.items()}
 cards.db.initialize()
 
-class HearthEnv:
+class HearthEnv(Env):
 	""" A state of the game, i.e. the game board.
     """
-	action_space = None
-	observation_space = None
+	# action_space = # spaces.d
+	observation_space = spaces.Discrete(262)
 
 	def __init__(self):
 		self.playerJustMoved = 2  # At the root pretend the player just moved is p2 - p1 has the first move
+		self.info_includes = {}
+
 		self.playerToMove = 1
 		self.players_ordered = None
 		self.hero1 = None
@@ -68,11 +78,6 @@ class HearthEnv:
 		st.players_ordered = [st.game.player1, st.game.player2]
 		return st
 
-	def get_possible_actions(self):
-		actions = []
-		for move in self.__getMoves():
-			actions.append(self.__moveToAction(move))
-		return actions
 
 	def get_random_action(self):
 		return self.__moveToAction(self.__fastGetRandomMove())
@@ -92,11 +97,11 @@ class HearthEnv:
 		if self.game.step == Step.BEGIN_MULLIGAN:
 			type = Move.mulligan
 			selection = [int(i) - 1 for i in input("Enter the indices of the cards you want to mulligan: \n").strip().split(' ')]
-			return [type.value, selection]
+			return [type, selection]
 		elif current_player.choice is not None:
 			type = Move.choice
 			selection = [int(i) - 1 for i in input("Enter the indices of the cards you want to choose: \n").strip().split(' ')]
-			return [type.value, selection]
+			return [type, selection]
 		else:
 			options = ""
 			for k in string_to_move.keys():
@@ -114,27 +119,27 @@ class HearthEnv:
 				type = string_to_move[input_arr[0]]
 				input_arr[1:] = [int(i) - 1 for i in input_arr[1:]]
 				if type == Move.end_turn:
-					return [type.value]
+					return [type]
 				if type == Move.play_card or type == Move.minion_attack:
 					if len(input_arr) < 2:
 						continue
 					selection = input_arr[1]
 
 				if selection is None:
-					action = [type.value, None]
+					move = [type, None]
 					if len(input_arr) > 1:
-						action.append(input_arr[1])
+						move.append(input_arr[1])
 					else:
-						action.append(None)
+						move.append(None)
 				else:
-					action = [type.value, selection]
+					move = [type, selection]
 					if len(input_arr) > 2:
-						action.append(input_arr[2])
+						move.append(input_arr[2])
 					else:
-						action.append(None)
-				if self.__is_safe(action):
+						move.append(None)
+				if self.__is_safe(move):
 					break
-		return action
+		return self.__moveToAction(move)
 
 
 	def setup_game(self):
@@ -151,7 +156,10 @@ class HearthEnv:
 				self.setup_game()
 			return
 		done = self.__doMove(self.__actionToMove(action))
-		return self.__getState(), self.__getReward(), done, self.playerToMove
+		if not self.info_includes:
+			return self.__getState(), self.__getReward(), done, self.playerToMove
+		else:
+			return self.__getState(), self.__getReward(), done, {"playerToMove": self.playerToMove, "possibleMoves" : self.__get_possible_actions()}
 
 	def reset(self):
 		self.setup_game()
@@ -424,6 +432,11 @@ class HearthEnv:
 			# if no other moves remaining
 			return [Move.end_turn]
 
+	def __get_possible_actions(self):
+		actions = []
+		for move in self.__getMoves():
+			actions.append(self.__moveToAction(move))
+		return actions
 
 	def __is_safe(self, action):
 		""" tests the action on a clone of the game state.

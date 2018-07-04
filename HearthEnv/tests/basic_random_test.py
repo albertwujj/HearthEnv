@@ -1,11 +1,12 @@
 from hearthEnv import HearthEnv
+import gym
 from utils import *
 import random
+
+
 import time
 
 env = HearthEnv()
-
-
 
 turns = 0
 games = 0
@@ -18,8 +19,8 @@ playerToMove = 1
 while start_check - start_time < 20 * 60:
 
 	while not done:
-		action = random.choice(env.get_possible_actions())
-		x, y, done, playerToMove = env.step(action)
+		action = env.get_random_action()
+		_, _, done, info = env.step(action)
 		turns += 1
 	env.reset()
 	done = False
