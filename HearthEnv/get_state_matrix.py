@@ -11,7 +11,6 @@ def get_state(game, player):
         a numpy array features extracted from the
         supplied game.
     """
-
     p1 = player
     p2 = player.opponent
     s = np.zeros(263, dtype=np.int32)
