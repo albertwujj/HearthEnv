@@ -5,8 +5,8 @@ import numpy as np
 import multiprocessing as mp
 
 # if # of subprocesses is equal to just # of cores each subprocess may only utilize about 50% of a core
-# optimal # will depend on machine
-num_envs = mp.cpu_count() * 10
+# optimal num_ens will depend on machine
+num_envs = mp.cpu_count() * 25
 print("Num envs == {}".format(num_envs))
 env = SubprocVecEnvHS([HearthEnv for i in range(num_envs)])
 num_turns = 100
@@ -37,7 +37,7 @@ while start_check - start_time < 60 * 60:
 	games += num_envs
 	i += 1
 
-	if i % 2 == 0:
+	if i % 1 == 0:
 		time_last = time.time() - total_time - start_time
 		total_time = time.time() - start_time
 		steps_last = steps - steps_prev
