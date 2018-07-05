@@ -1,5 +1,5 @@
-from color_card import *
-from utils import *
+from hearthenv.utils.color_card import *
+from hearthenv.utils.misc import *
 from fireplace.card import Minion
 
 def hand(*cards):

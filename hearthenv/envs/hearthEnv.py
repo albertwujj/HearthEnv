@@ -13,6 +13,7 @@ import hearthenv.utils.describe_card as describe
 from gym.core import Env
 from gym import spaces
 from sty import fg
+import numpy as np
 
 logging.disable(logging.CRITICAL)
 
@@ -156,9 +157,9 @@ class HearthEnv(Env):
 			return
 		done = self.__doMove(self.__actionToMove(action))
 		if not self.info_includes:
-			return self.__getState(), self.__getReward(), done, self.playerToMove
+			return self.__get_state(), self.__getReward(), done, self.playerToMove
 		else:
-			return self.__getState(), self.__getReward(), done, {"playerToMove": self.playerToMove, "possibleMoves" : self.__get_possible_actions()}
+			return self.__get_state(), self.__getReward(), done, {"playerToMove": self.playerToMove, "possibleMoves" : self.__get_possible_actions()}
 
 	def reset(self):
 		self.setup_game()
@@ -532,7 +533,7 @@ class HearthEnv(Env):
 			return None
 		return self.players_ordered[self.playerToMove - 1]
 
-	def __get_state(game, player):
+	def __get_state(self):
 		"""
         function taken from github.com/dillondaudert/Hearthstone-AI and modified
         Args:
@@ -542,6 +543,8 @@ class HearthEnv(Env):
             a numpy array features extracted from the
             supplied game.
         """
+		game = self.game
+		player = self.players_ordered[self.playerToMove - 1]
 		p1 = player
 		p2 = player.opponent
 		s = np.zeros(263, dtype=np.int32)
