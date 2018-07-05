@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from baselines import logger
+from openai_baselines import logger
 
 class AlreadySteppingError(Exception):
     """

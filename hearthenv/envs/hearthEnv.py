@@ -11,7 +11,7 @@ from hearthenv.utils.misc import *
 from hearthenv.utils.color_card import *
 import hearthenv.utils.describe_card as describe
 from gym.core import Env
-from gym import spaces
+import gym.spaces as spaces
 from sty import fg
 import numpy as np
 

@@ -1,5 +1,5 @@
 import numpy as np
-from gym import spaces
+import gym.spaces as spaces
 from collections import OrderedDict
 from . import VecEnv
 

@@ -1,6 +1,6 @@
-from baselines.common.vec_env import VecEnvWrapper
+from openai_baselines.vec_env import VecEnvWrapper
 import numpy as np
-from gym import spaces
+import gym.spaces as spaces
 
 class VecFrameStack(VecEnvWrapper):
     """

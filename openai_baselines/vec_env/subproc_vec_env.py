@@ -1,8 +1,9 @@
+
+
 import numpy as np
 from multiprocessing import Process, Pipe
-from baselines.common.vec_env import VecEnv, CloudpickleWrapper
-from baselines.common.tile_images import tile_images
-
+from openai_baselines.vec_env import VecEnv, CloudpickleWrapper
+from openai_baselines.tile_images import tile_images
 
 def worker(remote, parent_remote, env_fn_wrapper):
     parent_remote.close()
@@ -80,7 +81,7 @@ class SubprocVecEnv(VecEnv):
         if self.closed:
             return
         if self.waiting:
-            for remote in self.remotes:            
+            for remote in self.remotes:
                 remote.recv()
         for remote in self.remotes:
             remote.send(('close', None))
