@@ -53,7 +53,6 @@ class HearthEnv(Env):
 	# action_space = # spaces.d
 	observation_space = spaces.Discrete(obs_size)
 
-
 	def __init__(self):
 		self.playerJustMoved = 2  # At the root pretend the player just moved is p2 - p1 has the first move
 		self.info_includes = {}
@@ -265,7 +264,7 @@ class HearthEnv(Env):
 		except exceptions.GameOver:
 			return True
 		except Exception as e:
-			print("Ran into exception: {} While executing move {} for {}. Game State:".format(str(e), move, current_player))
+			print("Ran into exception: {} While executing move {} for player {}. Game State:".format(str(e), move, current_player.name))
 			self.render()
 			exceptionTester.append(1) # array will eval to True
 		if not self.game.step == Step.BEGIN_MULLIGAN:
