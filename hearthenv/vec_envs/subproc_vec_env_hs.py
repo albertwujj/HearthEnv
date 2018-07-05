@@ -1,11 +1,9 @@
 import numpy as np
-from baselines.common.vec_env.subproc_vec_env import SubprocVecEnv
-from baselines.common.tile_images import tile_images
+from openai_baselines.vec_env.subproc_vec_env import SubprocVecEnv
+from openai_baselines.tile_images import tile_images
 
-# a version of subproc_vec_env (which spawns envs in subprocesses for parallel execution) that supports
-# HearthEnv methods
-
-
+# a version of subproc_vec_env (which spawns envs in subprocesses for parallel execution)
+# that supports HearthEnv methods
 
 
 class SubprocVecEnvHS(SubprocVecEnv):
