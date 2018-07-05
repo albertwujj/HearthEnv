@@ -16,7 +16,7 @@ done = False
 start_time = time.time()
 start_check = time.time()
 playerToMove = 1
-while start_check - start_time < 20 * 60:
+while start_check - start_time < 60 * 60:
 
 	turns = 0
 	while turns < num_turns:
