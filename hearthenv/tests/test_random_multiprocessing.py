@@ -3,7 +3,7 @@ from hearthenv.vec_envs.subproc_vec_env_hs import SubprocVecEnvHS
 import time
 import numpy as np
 
-num_envs = 100
+num_envs = 700
 env = SubprocVecEnvHS([HearthEnv for i in range(num_envs)])
 num_turns = 100
 
