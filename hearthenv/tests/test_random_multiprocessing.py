@@ -5,7 +5,7 @@ import numpy as np
 import multiprocessing as mp
 
 
-num_envs = mp.cpu_count() * 10
+num_envs = mp.cpu_count() - 1
 print("Num envs == {}".format(num_envs))
 env = SubprocVecEnvHS([HearthEnv for i in range(num_envs)])
 num_turns = 100
