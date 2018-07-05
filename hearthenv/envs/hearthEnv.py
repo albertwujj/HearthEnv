@@ -224,7 +224,7 @@ class HearthEnv(Env):
 
 		if not self.game.step == Step.BEGIN_MULLIGAN:
 			assert current_player.playstate == PlayState.PLAYING
-			if current_player.name == "one":
+			if current_player is self.game.player1:
 				self.playerJustMoved = 1
 			else:
 				self.playerJustMoved = 2
@@ -264,7 +264,7 @@ class HearthEnv(Env):
 		except exceptions.GameOver:
 			return True
 		except Exception as e:
-			print("Ran into exception: {} While executing move {} for player {}. Game State:".format(str(e), move, current_player.name))
+			print("Ran into exception: {} While executing move {} for player {}. Game State:".format(str(e), move, self.playerJustMoved))
 			self.render()
 			exceptionTester.append(1) # array will eval to True
 		if not self.game.step == Step.BEGIN_MULLIGAN:
