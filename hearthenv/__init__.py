@@ -1,6 +1,6 @@
 from setuptools import setup
 
 setup(
-	name='HearthEnv',
+	name='hearthenv',
 	version='0.0.1',
 )

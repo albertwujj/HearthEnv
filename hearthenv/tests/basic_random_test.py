@@ -1,9 +1,4 @@
-from hearthEnv import HearthEnv
-import gym
-from utils import *
-import random
-
-
+from hearthenv.envs.hearthEnv import HearthEnv
 import time
 
 env = HearthEnv()
