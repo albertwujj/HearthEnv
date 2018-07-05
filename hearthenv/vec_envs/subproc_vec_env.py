@@ -1,8 +1,9 @@
+# taken directly from https://github.com/openai/baselines
+
 import numpy as np
 from multiprocessing import Process, Pipe
 from baselines.common.vec_env import VecEnv, CloudpickleWrapper
 from baselines.common.tile_images import tile_images
-
 
 def worker(remote, parent_remote, env_fn_wrapper):
     parent_remote.close()
@@ -24,6 +25,12 @@ def worker(remote, parent_remote, env_fn_wrapper):
             break
         elif cmd == 'get_spaces':
             remote.send((env.observation_space, env.action_space))
+        elif cmd == 'get_random_action':
+            action = env.get_random_action()
+            remote.send(action)
+        elif cmd == 'get_possible_actions':
+            possible_actions = env.get_possible_actions()
+            remote.send(possible_actions)
         else:
             raise NotImplementedError
 

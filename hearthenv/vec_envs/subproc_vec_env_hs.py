@@ -2,35 +2,10 @@ import numpy as np
 from baselines.common.vec_env.subproc_vec_env import SubprocVecEnv
 from baselines.common.tile_images import tile_images
 
+# a version of subproc_vec_env (which spawns envs in subprocesses for parallel execution) that supports
+# HearthEnv methods
 
-def worker(remote, parent_remote, env_fn_wrapper):
-    parent_remote.close()
-    env = env_fn_wrapper.x()
-    while True:
-        cmd, data = remote.recv()
-        if cmd == 'step':
-            ob, reward, done, info = env.step(data)
-            if done:
-                ob = env.reset()
-            remote.send((ob, reward, done, info))
-        elif cmd == 'reset':
-            ob = env.reset()
-            remote.send(ob)
-        elif cmd == 'render':
-            remote.send(env.render(mode='rgb_array'))
-        elif cmd == 'close':
-            remote.close()
-            break
-        elif cmd == 'get_spaces':
-            remote.send((env.observation_space, env.action_space))
-        elif cmd == 'get_random_action':
-            action = env.get_random_action()
-            remote.send(action)
-        elif cmd == 'get_possible_actions':
-            possible_actions = env.get_possible_actions()
-            remote.send(possible_actions)
-        else:
-            raise NotImplementedError
+
 
 
 class SubprocVecEnvHS(SubprocVecEnv):
@@ -38,12 +13,12 @@ class SubprocVecEnvHS(SubprocVecEnv):
     def get_possible_actions(self):
         for remote in self.remotes:
             remote.send(('get_possible_actions', None))
-        return np.stack([remote.recv() for remote in self.remotes])
+        return [remote.recv() for remote in self.remotes]
 
     def get_random_action(self):
         for remote in self.remotes:
             remote.send(('get_random_action', None))
-        return np.stack([remote.recv() for remote in self.remotes])
+        return [remote.recv() for remote in self.remotes]
 
     def render(self, mode='human'):
         for pipe in self.remotes:

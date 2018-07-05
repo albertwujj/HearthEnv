@@ -6,7 +6,7 @@ from random import randint
 import sys
 from enum import Enum
 from fireplace import cards, exceptions, utils
-from hearthstone.enums import PlayState, Step, Mulligan, CardClass, Race
+from hearthstone.enums import PlayState, Step, Mulligan, State, CardClass, Race
 from hearthenv.utils.misc import *
 from hearthenv.utils.color_card import *
 import hearthenv.utils.describe_card as describe
@@ -40,7 +40,7 @@ class Info(AutoNumber):
 	possible_moves = ()
 	random_move = ()
 
-
+obs_size = 263
 
 string_to_move = {"end": Move.end_turn, "heropower": Move.hero_power, "minionattack": Move.minion_attack, "heroattack": Move.hero_attack,
 				  "play": Move.play_card}
@@ -51,7 +51,8 @@ class HearthEnv(Env):
 	""" A state of the game, i.e. the game board.
     """
 	# action_space = # spaces.d
-	observation_space = spaces.Discrete(262)
+	observation_space = spaces.Discrete(obs_size)
+
 
 	def __init__(self):
 		self.playerJustMoved = 2  # At the root pretend the player just moved is p2 - p1 has the first move
@@ -150,19 +151,16 @@ class HearthEnv(Env):
 			self.playerToMove = 1
 			self.lastMovePlayed = None
 
-	def step(self, action=None):
+	def step(self, action):
 		if action is None:
-			if self.game is None:
-				self.setup_game()
-			return
+			return np.zeros(obs_size), -1, -1, -1
 		done = self.__doMove(self.__actionToMove(action))
-		if not self.info_includes:
-			return self.__get_state(), self.__getReward(), done, self.playerToMove
-		else:
-			return self.__get_state(), self.__getReward(), done, {"playerToMove": self.playerToMove, "possibleMoves" : self.__get_possible_actions()}
+		return self.__get_state(), self.__getReward(), done, self.playerToMove
 
+	# TODO return obs after resetting
 	def reset(self):
 		self.setup_game()
+		return np.zeros(obs_size)
 
 	def render(self, mode='human'):
 		""" prints each player's board, and the move last played
@@ -263,7 +261,7 @@ class HearthEnv(Env):
 				hero = current_player.hero
 				hero.attack(hero.targets[move[2]])
 			elif move[0] == Move.choice:
-				current_player.choice.choose(move[1])
+				current_player.choice.choose(current_player.choice.cards[move[1]])
 		except exceptions.GameOver:
 			return True
 		except Exception as e:
@@ -274,6 +272,7 @@ class HearthEnv(Env):
 			self.playerToMove = 1 if self.game.current_player is self.game.player1 else 2
 		return False
 
+	# TODO: Make actions one-hot
 	def __moveToAction(self, move):
 		move[0] = move[0].value
 		return move
@@ -305,8 +304,8 @@ class HearthEnv(Env):
 
 		# Choose card
 		if current_player.choice is not None:
-			for card in current_player.choice.cards:
-				valid_moves.append([Move.choice, card])
+			for i in range(len(current_player.choice.cards)):
+				valid_moves.append([Move.choice, i])
 			return valid_moves
 
 		else:
@@ -381,8 +380,8 @@ class HearthEnv(Env):
 			return []
 		# Choose card
 		elif current_player.choice is not None:
-			card = random.choice(current_player.choice.cards)
-			return [Move.choice, card]
+			card_index = randint(0, len(current_player.choice.cards) - 1)
+			return [Move.choice, card_index]
 		else:
 			chance = random.random()
 			threshold = 0
@@ -400,15 +399,15 @@ class HearthEnv(Env):
 			chance = random.random()
 			# Play card
 			if chance < .50 and len(current_player.hand) > 0: # 50% chance if no minion attack
-				card = random.choice(current_player.hand)
-				if card.is_playable():
-					if len(card.targets) > 0:
-						t = randint(0, len(card.targets) - 1)
-						valid_card = [Move.play_card, current_player.hand.index(card), t]
+				card_index = random.choice(current_player.hand)
+				if card_index.is_playable():
+					if len(card_index.targets) > 0:
+						t = randint(0, len(card_index.targets) - 1)
+						valid_card = [Move.play_card, current_player.hand.index(card_index), t]
 					else:
-						valid_card = [Move.play_card, current_player.hand.index(card), None]
-					if card.must_choose_one:
-						valid_card.append(randint(0, len(card.choose_cards) - 1))
+						valid_card = [Move.play_card, current_player.hand.index(card_index), None]
+					if card_index.must_choose_one:
+						valid_card.append(randint(0, len(card_index.choose_cards) - 1))
 					return valid_card
 			chance = random.random()
 			# Hero Attack
@@ -533,6 +532,7 @@ class HearthEnv(Env):
 			return None
 		return self.players_ordered[self.playerToMove - 1]
 
+
 	def __get_state(self):
 		"""
         function taken from github.com/dillondaudert/Hearthstone-AI and modified
@@ -547,7 +547,11 @@ class HearthEnv(Env):
 		player = self.players_ordered[self.playerToMove - 1]
 		p1 = player
 		p2 = player.opponent
-		s = np.zeros(263, dtype=np.int32)
+		s = np.zeros(obs_size, dtype=np.int32)
+
+		# TODO: Create state representation for mulligan stage
+		if game.step == Step.BEGIN_MULLIGAN or game.ended:
+			return s
 
 		# 0-9 player1 class, we subtract 1 here because the classes are from 1 to 10
 		s[p1.hero.card_class - 1] = 1
