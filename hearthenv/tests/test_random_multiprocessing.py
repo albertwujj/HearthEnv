@@ -2,8 +2,11 @@ from hearthenv.envs.hearthEnv import HearthEnv
 from hearthenv.vec_envs.subproc_vec_env_hs import SubprocVecEnvHS
 import time
 import numpy as np
+import multiprocessing as mp
 
-num_envs = 200
+
+num_envs = mp.cpu_count() * 10
+print("Num envs == {}".format(num_envs))
 env = SubprocVecEnvHS([HearthEnv for i in range(num_envs)])
 num_turns = 100
 
@@ -14,7 +17,9 @@ i = 0
 done = False
 
 start_time = time.time()
-start_check = time.time()
+start_check = start_time
+total_time = 0
+steps_prev = 0
 playerToMove = 1
 while start_check - start_time < 60 * 60:
 
@@ -31,5 +36,12 @@ while start_check - start_time < 60 * 60:
 	games += num_envs
 	i += 1
 
-	total_time = time.time() - start_time
-	print("Playing {} steps took {} seconds, an average of {} steps/s".format(steps,total_time, steps/total_time))
+	if i % 2 == 0:
+		time_last = time.time() - total_time - start_time
+		total_time = time.time() - start_time
+		steps_last = steps - steps_prev
+		print("Playing {} steps took {} seconds, an average of {} steps/s"
+			  .format(steps_last, time_last, steps_last / time_last))
+		print("TOTAL: Playing {} steps took {} seconds, an average of {} steps/s".format(steps,total_time, steps/total_time))
+		print()
+		steps_prev = steps
