@@ -53,9 +53,9 @@ class HearthEnv(Env):
 	# action_space = # spaces.d
 	observation_space = spaces.Discrete(obs_size)
 
-	def __init__(self):
+	def __init__(self, returnPossibleMoves = False):
 		self.playerJustMoved = 2  # At the root pretend the player just moved is p2 - p1 has the first move
-		self.info_includes = {}
+		self.returnPossibleMoves = returnPossibleMoves
 
 		self.playerToMove = 1
 		self.players_ordered = None
@@ -78,9 +78,6 @@ class HearthEnv(Env):
 		st.players_ordered = [st.game.player1, st.game.player2]
 		return st
 
-
-	def get_random_action(self):
-		return self.__moveToAction(self.__fastGetRandomMove())
 
 	def human(self):
 		""" allows creating an action from the console
@@ -149,12 +146,17 @@ class HearthEnv(Env):
 			self.playerJustMoved = 2  # At the root pretend the player just moved is p2 - p1 has the first move
 			self.playerToMove = 1
 			self.lastMovePlayed = None
+			self.game.player1.choice.choose()
+			self.game.player2.choice.choose()
 
 	def step(self, action):
 		if action is None:
 			return np.zeros(obs_size), -1, -1, -1
 		done = self.__doMove(self.__actionToMove(action))
-		return self.__get_state(), self.__getReward(), done, self.playerToMove
+		if not self.returnPossibleMoves:
+			return self.__get_state(), self.__getReward(), done, self.playerToMove
+		else:
+			return self.__get_state(), self.__getReward(), done, (self.playerToMove, self.__get_possible_actions())
 
 	# TODO return obs after resetting
 	def reset(self):
@@ -182,7 +184,7 @@ class HearthEnv(Env):
 
 	def renderPOV(self, player_num):
 		""" prints the game state from a certain player's perspective, hiding
-			some information about the other player's board like official Hearthstone
+			some information about the other player's board like real Hearthstone
 		"""
 		out = sys.stdout
 		out.write("\n")
@@ -264,21 +266,37 @@ class HearthEnv(Env):
 		except exceptions.GameOver:
 			return True
 		except Exception as e:
-			print("Ran into exception: {} While executing move {} for player {}. Game State:".format(str(e), move, self.playerJustMoved))
-			self.render()
+			# print("Ran into exception: {} While executing move {} for player {}. Game State:".format(str(e), move, self.playerJustMoved))
+			# self.render()
 			exceptionTester.append(1) # array will eval to True
 		if not self.game.step == Step.BEGIN_MULLIGAN:
 			self.playerToMove = 1 if self.game.current_player is self.game.player1 else 2
 		return False
 
-	# TODO: Make actions one-hot
+
 	def __moveToAction(self, move):
+		""" Creates one-hot numpy array representing a move
+			Mutates the move
+		"""
 		move[0] = move[0].value
-		return move
+		for i, x in enumerate(move):
+			if x is None:
+				move[i] = 16
+		move = np.array(move, dtype=int)
+		# there are up to 16 possible targets in HS, plus one more for None case
+		action = np.eye(17)[move.reshape(-1)]
+		return action
 
 	def __actionToMove(self, action):
-		action[0] = Move(action[0])
-		return action
+		""" converts one-hot numpy array back to a move
+			Mutates the action
+		"""
+		move = []
+		nonzero_i = np.argwhere(action)
+		for x in nonzero_i:
+			move.append(x[1] if x[1] < 10 else None)
+		move[0] = Move(move[0])
+		return move
 
 	def __getMoves(self):
 		""" Get all possible moves from this state.
@@ -430,11 +448,15 @@ class HearthEnv(Env):
 			# if no other moves remaining
 			return [Move.end_turn]
 
-	def __get_possible_actions(self):
+	def get_possible_actions(self):
 		actions = []
 		for move in self.__getMoves():
 			actions.append(self.__moveToAction(move))
 		return actions
+
+	def get_random_action(self):
+		move = self.__fastGetRandomMove()
+		return self.__moveToAction(move)
 
 	def __is_safe(self, action):
 		""" tests the action on a clone of the game state.
@@ -500,20 +522,21 @@ class HearthEnv(Env):
 		pout.append("FIELD: " + p(*field, s=", ")) # line 3
 		return pout
 
-	def getResult(self, playerjm):
-		""" Get the game result from the viewpoint of playerjm.
+	def getResult(self, player):
+		""" Get the game result from the viewpoint of player, 1 for win, 0 for loss
 		"""
 		if self.players_ordered[0].hero.health <= 0 and self.players_ordered[1].hero.health <= 0: # tie
-			return 0.1
-		elif self.players_ordered[playerjm - 1].hero.health <= 0:  # loss
+			return 0.5
+		elif self.players_ordered[player - 1].hero.health <= 0:  # loss
 			return 0
-		elif self.players_ordered[2 - playerjm].hero.health <= 0:  # win
-			return pow(0.99, self.game.turn)
-		else:  # Should not be possible to get here unless we call GetResult() early (before a hero has <= 0 hp)
-			return 0.1
+		elif self.players_ordered[2 - player].hero.health <= 0:  # win
+			return 1
+		else: # game not over
+			return 0.5
 
 	def __getReward(self):
 		""" Get the current reward, from the perspective of the player who just moved
+			1 for win, -1 for loss
 			0 if game is not over
 		"""
 		player = self.playerJustMoved
