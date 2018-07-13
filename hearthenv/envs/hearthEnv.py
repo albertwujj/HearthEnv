@@ -226,7 +226,7 @@ class HearthEnv(Env):
 
 		if not self.game.step == Step.BEGIN_MULLIGAN:
 			if current_player.playstate != PlayState.PLAYING:
-				print("Attempt to execute move while current_player is in playstate: {}".format(current_player.playstate))
+				print("Attempt to execute move while current_player is in playstate: {}, move not executed".format(current_player.playstate.name))
 				print("Attempted move: {}, on board:".format(move))
 				self.render()
 				return
@@ -283,6 +283,8 @@ class HearthEnv(Env):
 		""" Creates one-hot numpy array representing a move
 			Mutates the move
 		"""
+		if move is None:
+			return None
 		move[0] = move[0].value
 		for i, x in enumerate(move):
 			if x is None:
@@ -296,6 +298,8 @@ class HearthEnv(Env):
 		""" converts one-hot numpy array back to a move
 			Mutates the action
 		"""
+		if action is None:
+			return None
 		move = []
 		nonzero_i = np.argwhere(action)
 		for x in nonzero_i:
@@ -308,7 +312,7 @@ class HearthEnv(Env):
 		    Modified version of function from Ragowit's Fireplace fork
 		"""
 
-		if self.game.ended:
+		if self.game.ended or self.game.current_player is None or self.game.current_player.playstate != PlayState.PLAYING:
 			return []
 
 		valid_moves = []
@@ -387,7 +391,7 @@ class HearthEnv(Env):
 			Modified version of function from Ragowit's Fireplace fork
 		"""
 
-		if self.game.ended:
+		if self.game.ended or self.game.current_player is None or self.game.current_player.playstate != PlayState.PLAYING:
 			return None
 
 		if self.game.step == Step.BEGIN_MULLIGAN:
