@@ -225,7 +225,12 @@ class HearthEnv(Env):
 		current_player = self.game.current_player
 
 		if not self.game.step == Step.BEGIN_MULLIGAN:
-			assert current_player.playstate == PlayState.PLAYING
+			if current_player.playstate != PlayState.PLAYING:
+				print("Attempt to execute move while current_player is in playstate: {}".format(current_player.playstate))
+				print("Attempted move: {}, on board:".format(move))
+				self.render()
+				return
+
 			if current_player is self.game.player1:
 				self.playerJustMoved = 1
 			else:
