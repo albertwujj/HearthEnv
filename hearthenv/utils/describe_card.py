@@ -5,7 +5,7 @@ from fireplace.card import Minion
 def hand(*cards):
 
     ret = []
-    for c in cards:
+    for i, c in enumerate(cards):
         specials = []
         if type(c) is Minion:
             if c.windfury:

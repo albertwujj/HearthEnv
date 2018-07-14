@@ -303,7 +303,7 @@ class HearthEnv(Env):
 		move = []
 		nonzero_i = np.argwhere(action)
 		for x in nonzero_i:
-			move.append(x[1] if x[1] < 10 else None)
+			move.append((x[1] if x[1] < 10 else None) if len(x) > 1 else x[0])
 		move[0] = Move(move[0])
 		return move
 
@@ -467,12 +467,12 @@ class HearthEnv(Env):
 		move = self.__fastGetRandomMove()
 		return self.__moveToAction(move)
 
-	def __is_safe(self, action):
+	def __is_safe(self, move):
 		""" tests the action on a clone of the game state.
 		"""
 		copy = self.clone()
 		exceptionTester = []
-		copy.__doMove(copy.__actionToMove(action), exceptionTester=exceptionTester)
+		copy.__doMove(move, exceptionTester=exceptionTester)
 		if exceptionTester:
 			return False
 		else:
@@ -480,20 +480,22 @@ class HearthEnv(Env):
 
 	# TODO render secrets
 	def __renderplayer(self, player):
-		""" returns a three-line string representing a player's board
-			line 1: hero
-			line 2: hand
-			line 3: field
+		""" returns a length 3 string array representing a player's board
+			string 1: hero
+			string 2: hand
+			string 3: field
 		"""
 		pout = []
 
 		h_health = fg.red + str(player.hero.health) + fg.rs
+		if player.hero.armor != 0:
+			h_health += "+" + str(player.hero.armor)
+
 		h_mana = fg.blue + str(player.mana) + "/" + str(player.max_mana) + fg.rs
 
 		line_1 = p(player.hero, h_health, h_mana)
 
-		if player.hero.armor != 0:
-			line_1 += "+" + str(player.hero.armor)
+
 		if player.weapon is not None:
 			line_1 += ", " + str(player.weapon.damage) + " " + str(player.weapon.durability)
 
@@ -503,7 +505,7 @@ class HearthEnv(Env):
 		pout.append(fg.rs + "HAND: " + p(*describe.hand(*player.hand), s=", ")) # line 2
 		
 		field = []
-		for c in player.field:
+		for i, c in enumerate(player.field):
 			card = ""
 			specials = []
 			if c.windfury:
